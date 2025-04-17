@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高分子モノマーのガラス転移温度予測プログラム解説</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2980b9;
+            border-left: 4px solid #3498db;
+            padding-left: 10px;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #3498db;
+            margin-top: 25px;
+        }
+        code {
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+            background-color: #f5f5f5;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .note {
+            background-color: #e7f4ff;
+            border-left: 4px solid #3498db;
+            padding: 10px 15px;
+            margin: 20px 0;
+        }
+        .formula {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 15px 0;
+            text-align: center;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>高分子モノマーのガラス転移温度予測プログラム解説</h1>
+    
+    <h2>1. プログラム概要</h2>
+    <p>
+        このプログラム（simple2.py）は、高分子モノマーのSMILES表記を入力として、そのガラス転移温度（Tg）を予測するものです。
+        ガラス転移温度は高分子材料の重要な物理特性であり、材料の用途や加工条件を決定する上で重要な指標となります。
+    </p>
+    <p>
+        このプログラムは、RDKitライブラリを使用して分子構造を解析し、分子量や官能基の数などの特徴量を抽出して、
+        それらの特徴量に基づいてガラス転移温度を予測します。
+    </p>
+
+    <h2>2. 科学的背景</h2>
+    <h3>2.1 ガラス転移温度（Tg）とは</h3>
+    <p>
+        ガラス転移温度（Tg）は、高分子材料がガラス状態（硬くて脆い状態）からゴム状態（柔らかくて弾性のある状態）へと
+        変化する温度です。この温度を境に、高分子材料の機械的性質や熱的性質が大きく変化します。
+    </p>
+    <p>
+        Tgは高分子の分子構造に強く依存し、以下のような要因によって影響を受けます：
+    </p>
+    <ul>
+        <li>分子量：一般に分子量が大きいほどTgは高くなる傾向があります</li>
+        <li>分子の剛直性：剛直な構造（芳香族環など）を持つ高分子はTgが高くなります</li>
+        <li>分子間力：水素結合やその他の強い分子間相互作用はTgを上昇させます</li>
+        <li>側鎖の柔軟性：柔軟な側鎖を持つ高分子はTgが低くなる傾向があります</li>
+    </ul>
+
+    <h3>2.2 SMILES表記について</h3>
+    <p>
+        SMILES（Simplified Molecular Input Line Entry System）は、分子構造を文字列で表現するための表記法です。
+        例えば、ベンゼンは「c1ccccc1」または「C1=CC=CC=C1」と表記されます。このプログラムでは、
+        モノマーの構造をSMILES形式で入力することで、その構造を解析し特徴量を抽出します。
+    </p>
+
+    <h2>3. プログラムの実装詳細</h2>
+    <h3>3.1 必要なライブラリ</h3>
+    <p>
+        このプログラムを実行するには、以下のPythonライブラリが必要です：
+    </p>
+    <ul>
+        <li><code>numpy</code>：数値計算ライブラリ</li>
+        <li><code>rdkit</code>：化学情報学ライブラリ（分子構造の解析や特徴量抽出に使用）</li>
+    </ul>
+    <p>
+        RDKitのインストールは少し複雑な場合があります。Anacondaを使用している場合は以下のコマンドでインストールできます：
+    </p>
+    <pre>conda install -c conda-forge rdkit</pre>
+    <p>
+        または、Pipを使用する場合：
+    </p>
+    <pre>pip install rdkit</pre>
+
+    <h3>3.2 主要な関数</h3>
+    <h4>predict_tg関数</h4>
+    <p>
+        この関数は、モノマーのSMILES表記を入力として受け取り、予測されるガラス転移温度（ケルビン単位）を返します。
+    </p>
+    <pre>
+def predict_tg(smiles):
+    """
+    高分子モノマーのSMILES表記からガラス転移温度(Tg)を予測する関数
+    
+    Args:
+        smiles (str): モノマーのSMILES表記
+    
+    Returns:
+        float: 予測されたTg値（ケルビン）
+    """
+    # モノマーの分子構造を読み込み
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return None
+    
+    # 基本的な構造特徴量を計算
+    mol_weight = Descriptors.MolWt(mol)
+    rotatable_bonds = Descriptors.NumRotatableBonds(mol)
+    h_donors = Descriptors.NumHDonors(mol)
+    h_acceptors = Descriptors.NumHAcceptors(mol)
+    
+    # 官能基のカウント
+    aromatic_rings = Chem.GetSSSR(mol)
+    aromatic_count = 0
+    for ring in aromatic_rings:
+        if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
+            aromatic_count += 1
+    
+    # 特定の官能基のカウント
+    amide_count = Fragments.fr_amide(mol)
+    ester_count = Fragments.fr_ester(mol)
+    ether_count = Fragments.fr_ether(mol)
+    alcohol_count = Fragments.fr_alcohol(mol)
+    
+    # 各特徴量に対する寄与度（これらの値は文献や実験データから調整が必要）
+    # 以下は簡略化したモデルでの仮の係数
+    base_tg = 150  # 基準Tg（K）
+    mw_contrib = 0.1 * mol_weight
+    flex_contrib = -7 * rotatable_bonds  # 柔軟性は一般的にTgを下げる
+    hbond_contrib = 10 * (h_donors + 0.5 * h_acceptors)  # 水素結合はTgを上げる
+    
+    # 官能基の寄与
+    aromatic_contrib = 30 * aromatic_count  # 芳香族環は剛直性を上げTgを上昇
+    amide_contrib = 50 * amide_count  # アミド結合は強い分子間力によりTgを上昇
+    ester_contrib = 20 * ester_count
+    ether_contrib = 5 * ether_count
+    alcohol_contrib = 25 * alcohol_count
+    
+    # 最終的なTg予測値（K）
+    predicted_tg = (base_tg + mw_contrib + flex_contrib + hbond_contrib +
+                   aromatic_contrib + amide_contrib + ester_contrib +
+                   ether_contrib + alcohol_contrib)
+    
+    return max(0, predicted_tg)  # 物理的に意味のある範囲に制限
+</pre>
+
+    <h4>main関数</h4>
+    <p>
+        この関数は、プログラムのメインエントリーポイントであり、テスト用のモノマー例を使用してTgを予測し、
+        またユーザーからの入力を受け付けてTgを予測します。
+    </p>
+    <pre>
+def main():
+    # テスト用のモノマー例（SMILES表記）
+    test_monomers = {
+        "ポリスチレン モノマー": "C=CC1=CC=CC=C1",
+        "メチルメタクリレート": "C=C(C)C(=O)OC",
+        "ビニルアルコール": "C=CO",
+        "アクリルアミド": "C=CC(=O)N"
+    }
+    
+    print("モノマーのガラス転移温度(Tg)予測結果:")
+    print("-" * 50)
+    for name, smiles in test_monomers.items():
+        tg_k = predict_tg(smiles)
+        tg_c = tg_k - 273.15  # ケルビンから摂氏に変換
+        print(f"{name} (SMILES: {smiles}):")
+        print(f"  予測Tg = {tg_k:.1f} K ({tg_c:.1f} °C)")
+        print("-" * 50)
+    
+    # ユーザー入力
+    print("\nSMILES形式でモノマーを入力してください（終了するには'q'を入力）:")
+    while True:
+        user_input = input("&gt; ")
+        if user_input.lower() == 'q':
+            break
+        
+        tg_k = predict_tg(user_input)
+        if tg_k is None:
+            print("無効なSMILES形式です。再度入力してください。")
+        else:
+            tg_c = tg_k - 273.15
+            print(f"予測Tg = {tg_k:.1f} K ({tg_c:.1f} °C)")
+</pre>
+
+    <h3>3.3 予測モデルの詳細</h3>
+    <p>
+        このプログラムでは、以下の特徴量を使用してTgを予測しています：
+    </p>
+    <table>
+        <tr>
+            <th>特徴量</th>
+            <th>寄与係数</th>
+            <th>説明</th>
+        </tr>
+        <tr>
+            <td>基準Tg</td>
+            <td>150 K</td>
+            <td>基本となるTg値</td>
+        </tr>
+        <tr>
+            <td>分子量</td>
+            <td>0.1 × 分子量</td>
+            <td>分子量が大きいほどTgは上昇</td>
+        </tr>
+        <tr>
+            <td>回転可能な結合数</td>
+            <td>-7 × 回転可能な結合数</td>
+            <td>分子の柔軟性はTgを低下させる</td>
+        </tr>
+        <tr>
+            <td>水素結合ドナー・アクセプター</td>
+            <td>10 × (ドナー数 + 0.5 × アクセプター数)</td>
+            <td>水素結合はTgを上昇させる</td>
+        </tr>
+        <tr>
+            <td>芳香族環</td>
+            <td>30 × 芳香族環の数</td>
+            <td>芳香族環は分子の剛直性を高めTgを上昇させる</td>
+        </tr>
+        <tr>
+            <td>アミド基</td>
+            <td>50 × アミド基の数</td>
+            <td>アミド結合は強い分子間力によりTgを大きく上昇させる</td>
+        </tr>
+        <tr>
+            <td>エステル基</td>
+            <td>20 × エステル基の数</td>
+            <td>エステル結合はTgを上昇させる</td>
+        </tr>
+        <tr>
+            <td>エーテル基</td>
+            <td>5 × エーテル基の数</td>
+            <td>エーテル結合は弱いながらもTgを上昇させる</td>
+        </tr>
+        <tr>
+            <td>アルコール基</td>
+            <td>25 × アルコール基の数</td>
+            <td>水酸基は水素結合によりTgを上昇させる</td>
+        </tr>
+    </table>
+
+    <div class="formula">
+        Tg = 基準Tg + 分子量寄与 + 柔軟性寄与 + 水素結合寄与 + 官能基寄与
+    </div>
+
+    <div class="note">
+        <p><strong>注意：</strong> このモデルは簡略化されたものであり、実際のTg予測には更に複雑な要因が関わります。
+        係数は文献値や実験データに基づいて調整する必要があります。</p>
+    </div>
+
+    <h2>4. 使用例</h2>
+    <p>
+        プログラムには以下のテスト用モノマーが含まれています：
+    </p>
+    <table>
+        <tr>
+            <th>モノマー名</th>
+            <th>SMILES表記</th>
+            <th>構造的特徴</th>
+        </tr>
+        <tr>
+            <td>ポリスチレン モノマー</td>
+            <td>C=CC1=CC=CC=C1</td>
+            <td>ビニル基と芳香族環を持つ</td>
+        </tr>
+        <tr>
+            <td>メチルメタクリレート</td>
+            <td>C=C(C)C(=O)OC</td>
+            <td>ビニル基とエステル基を持つ</td>
+        </tr>
+        <tr>
+            <td>ビニルアルコール</td>
+            <td>C=CO</td>
+            <td>ビニル基とアルコール基を持つ</td>
+        </tr>
+        <tr>
+            <td>アクリルアミド</td>
+            <td>C=CC(=O)N</td>
+            <td>ビニル基とアミド基を持つ</td>
+        </tr>
+    </table>
+
+    <h3>4.1 プログラムの実行方法</h3>
+    <p>
+        プログラムを実行するには、コマンドラインから以下のコマンドを実行します：
+    </p>
+    <pre>python simple2.py</pre>
+    <p>
+        実行すると、まず組み込みのテストモノマーに対するTg予測結果が表示され、
+        その後ユーザーが独自のSMILES表記を入力してTgを予測することができます。
+    </p>
+
+    <h3>4.2 SMILES表記の入力例</h3>
+    <p>
+        以下に、いくつかの一般的なモノマーのSMILES表記を示します：
+    </p>
+    <ul>
+        <li>エチレン: C=C</li>
+        <li>プロピレン: C=CC</li>
+        <li>塩化ビニル: C=CCl</li>
+        <li>テトラフルオロエチレン: C(=C)(F)(F)F</li>
+        <li>ナイロン6のモノマー（カプロラクタム）: C1CCC(=O)NC1</li>
+    </ul>
+
+    <h2>5. 応用と限界</h2>
+    <p>
+        このプログラムは、高分子材料設計の初期段階で、候補となるモノマーのTgを素早く予測するのに役立ちます。
+        しかし、以下のような限界があることに注意が必要です：
+    </p>
+    <ul>
+        <li>このモデルは簡略化されており、実際のTgは重合度、立体規則性、結晶化度など多くの要因に影響されます</li>
+        <li>共重合体のTg予測には、モノマー組成比や配列なども考慮する必要があります</li>
+        <li>係数は仮のものであり、実験データに基づいた調整が必要です</li>
+        <li>複雑な高分子構造や特殊な官能基を持つモノマーでは予測精度が低下する可能性があります</li>
+    </ul>
+
+    <h2>6. まとめ</h2>
+    <p>
+        このプログラムは、高分子モノマーのSMILES表記からガラス転移温度（Tg）を予測する簡易的なモデルを実装しています。
+        分子量や官能基の種類と数に基づいて予測を行い、高分子材料設計の初期段階での材料スクリーニングに役立ちます。
+        より正確な予測のためには、実験データに基づいたモデルの調整や、より複雑な構造特徴量の導入が必要です。
+    </p>
+</body>
+</html>

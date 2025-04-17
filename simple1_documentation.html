@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>simple1.py - アルカン沸点予測プログラム解説</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #3498db;
+        }
+        code {
+            background-color: #f8f8f8;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+        }
+        pre {
+            background-color: #f8f8f8;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        .function {
+            margin-bottom: 30px;
+            border-left: 3px solid #3498db;
+            padding-left: 15px;
+        }
+        .note {
+            background-color: #ffffcc;
+            padding: 10px;
+            border-left: 4px solid #ffcc00;
+            margin: 15px 0;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .formula {
+            font-style: italic;
+            text-align: center;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>simple1.py - アルカン沸点予測プログラム解説</h1>
+    
+    <h2>1. プログラム概要</h2>
+    <p>
+        このプログラムは、アルカン（飽和炭化水素、CnH2n+2）の炭素数から沸点を予測するための機械学習モデルを実装しています。
+        線形回帰を用いて、炭素数と沸点の関係をモデル化し、未知のアルカンの沸点を予測することができます。
+    </p>
+    
+    <h2>2. 科学的背景</h2>
+    <p>
+        アルカンは炭素と水素のみからなる飽和炭化水素で、一般式はCnH2n+2で表されます。
+        例えば、メタン（CH4）、エタン（C2H6）、プロパン（C3H8）などがアルカンに分類されます。
+    </p>
+    <p>
+        アルカンの物理的性質（沸点、融点、密度など）は炭素数に依存する傾向があります。
+        特に沸点は炭素数が増えるにつれて上昇する傾向があり、これは分子間のファンデルワールス力が
+        分子サイズの増加とともに強くなるためです。
+    </p>
+    
+    <h3>アルカンの例</h3>
+    <table>
+        <tr>
+            <th>名前</th>
+            <th>分子式</th>
+            <th>炭素数</th>
+            <th>沸点 (°C)</th>
+        </tr>
+        <tr>
+            <td>メタン</td>
+            <td>CH<sub>4</sub></td>
+            <td>1</td>
+            <td>-161.5</td>
+        </tr>
+        <tr>
+            <td>エタン</td>
+            <td>C<sub>2</sub>H<sub>6</sub></td>
+            <td>2</td>
+            <td>-88.6</td>
+        </tr>
+        <tr>
+            <td>プロパン</td>
+            <td>C<sub>3</sub>H<sub>8</sub></td>
+            <td>3</td>
+            <td>-42.1</td>
+        </tr>
+        <tr>
+            <td>ブタン</td>
+            <td>C<sub>4</sub>H<sub>10</sub></td>
+            <td>4</td>
+            <td>-0.5</td>
+        </tr>
+        <tr>
+            <td>ペンタン</td>
+            <td>C<sub>5</sub>H<sub>12</sub></td>
+            <td>5</td>
+            <td>36.1</td>
+        </tr>
+    </table>
+    
+    <h2>3. プログラムの構造</h2>
+    <p>
+        プログラムは主に以下の3つの部分から構成されています：
+    </p>
+    <ol>
+        <li>沸点予測関数（<code>predict_boiling_point</code>）</li>
+        <li>グラフ描画関数（<code>plot_boiling_points</code>）</li>
+        <li>メインの対話型インターフェース</li>
+    </ol>
+    
+    <h2>4. 関数の詳細解説</h2>
+    
+    <div class="function">
+        <h3>predict_boiling_point(carbon_number)</h3>
+        <p>
+            この関数は、与えられた炭素数からアルカンの沸点を予測します。
+        </p>
+        <h4>パラメータ：</h4>
+        <ul>
+            <li><code>carbon_number</code> (int): 予測したいアルカンの炭素数</li>
+        </ul>
+        <h4>戻り値：</h4>
+        <ul>
+            <li><code>float</code>: 予測された沸点（摂氏）</li>
+        </ul>
+        <h4>実装の詳細：</h4>
+        <p>
+            この関数は、メタン（C1）からデカン（C10）までの既知のデータを使用して線形回帰モデルを構築します。
+            scikit-learnの<code>LinearRegression</code>クラスを使用して、炭素数と沸点の関係をモデル化しています。
+        </p>
+        <pre>
+# 既知のデータ（炭素数と対応する沸点（摂氏））
+carbon_numbers = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).reshape(-1, 1)
+boiling_points = np.array([-161.5, -88.6, -42.1, -0.5, 36.1, 68.7, 98.4, 125.7, 150.8, 174.0])
+
+# 線形回帰モデルの作成
+model = LinearRegression()
+model.fit(carbon_numbers, boiling_points)
+
+# 入力された炭素数での沸点予測
+predicted_bp = model.predict(np.array([[carbon_number]]))[0]
+</pre>
+        <p>
+            注意点として、<code>model.predict()</code>関数は<code>MatrixLike</code>型の入力を期待するため、
+            入力値を<code>np.array()</code>でラップして適切な形式に変換しています。
+        </p>
+    </div>
+    
+    <div class="function">
+        <h3>plot_boiling_points(max_carbon=20)</h3>
+        <p>
+            この関数は、炭素数と沸点の関係をグラフとして可視化します。
+        </p>
+        <h4>パラメータ：</h4>
+        <ul>
+            <li><code>max_carbon</code> (int, デフォルト=20): グラフに表示する最大炭素数</li>
+        </ul>
+        <h4>実装の詳細：</h4>
+        <p>
+            指定された最大炭素数までの各炭素数について沸点を予測し、matplotlibを使用してグラフを描画します。
+            グラフは「alkane_boiling_points.png」として保存され、画面にも表示されます。
+        </p>
+        <pre>
+carbon_range = range(1, max_carbon + 1)
+boiling_points = [predict_boiling_point(c) for c in carbon_range]
+
+plt.figure(figsize=(10, 6))
+plt.plot(carbon_range, boiling_points, 'o-', linewidth=2)
+plt.xlabel('炭素数')
+plt.ylabel('沸点 (°C)')
+plt.title('アルカン(CnH2n+2)の炭素数と沸点の関係')
+plt.grid(True)
+plt.savefig('alkane_boiling_points.png')
+plt.show()
+</pre>
+    </div>
+    
+    <h3>メインの対話型インターフェース</h3>
+    <p>
+        プログラムのメイン部分は、ユーザーが炭素数を入力し、対応するアルカンの予測沸点を表示する対話型インターフェースを提供します。
+        また、ユーザーはグラフ表示のオプションも選択できます。
+    </p>
+    <pre>
+if __name__ == "__main__":
+    # ユーザー入力
+    while True:
+        try:
+            carbon_input = input("予測したいアルカンの炭素数を入力してください（終了するには'q'）: ")
+            if carbon_input.lower() == 'q':
+                break
+            
+            carbon_number = int(carbon_input)
+            if carbon_number <= 0:
+                print("正の整数を入力してください")
+                continue
+                
+            bp = predict_boiling_point(carbon_number)
+            print(f"C{carbon_number}H{2*carbon_number+2}の予測沸点: {bp:.1f}°C")
+            
+            # グラフを表示するかどうか
+            show_graph = input("炭素数と沸点の関係をグラフ表示しますか？ (y/n): ")
+            if show_graph.lower() == 'y':
+                max_c = int(input("最大炭素数を入力してください: "))
+                plot_boiling_points(max_c)
+                
+        except ValueError:
+            print("有効な数値を入力してください")
+        
+        print()  # 空行を挿入
+</pre>
+    
+    <h2>5. 科学的考察</h2>
+    <p>
+        このプログラムで使用されている線形回帰モデルは、アルカンの炭素数と沸点の間に線形関係があることを仮定しています。
+        実際には、炭素数が増えるにつれて沸点の上昇率は徐々に減少する傾向があり、完全な線形関係ではありません。
+    </p>
+    <p>
+        より正確なモデルを構築するためには、以下のような改良が考えられます：
+    </p>
+    <ul>
+        <li>多項式回帰などの非線形モデルの使用</li>
+        <li>分子量や分子構造などの追加特徴量の導入</li>
+        <li>より多くのデータポイントの使用</li>
+    </ul>
+    
+    <div class="note">
+        <p><strong>注意：</strong> このプログラムは教育目的のシンプルなモデルであり、実際の科学研究や工業用途には、より複雑で精密なモデルが必要です。</p>
+    </div>
+    
+    <h2>6. 使用方法</h2>
+    <ol>
+        <li>プログラムを実行します：<code>python simple1.py</code></li>
+        <li>予測したいアルカンの炭素数を入力します（例：「5」と入力するとペンタンの沸点を予測）</li>
+        <li>グラフ表示のオプションで「y」を選択すると、炭素数と沸点の関係グラフが表示されます</li>
+        <li>プログラムを終了するには「q」を入力します</li>
+    </ol>
+    
+    <h2>7. 必要なライブラリ</h2>
+    <p>
+        このプログラムを実行するには、以下のPythonライブラリが必要です：
+    </p>
+    <ul>
+        <li>NumPy: 数値計算ライブラリ</li>
+        <li>Matplotlib: グラフ描画ライブラリ</li>
+        <li>scikit-learn: 機械学習ライブラリ</li>
+    </ul>
+    <p>
+        インストール方法：<code>pip install numpy matplotlib scikit-learn</code>
+    </p>
+    
+    <footer style="margin-top: 50px; border-top: 1px solid #ddd; padding-top: 20px; color: #777;">
+        <p>作成日: 2025年4月16日</p>
+    </footer>
+</body>
+</html>

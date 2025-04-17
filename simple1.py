@@ -22,7 +22,7 @@ def predict_boiling_point(carbon_number):
     model.fit(carbon_numbers, boiling_points)
     
     # 入力された炭素数での沸点予測
-    predicted_bp = model.predict([[carbon_number]])[0]
+    predicted_bp = model.predict(np.array([[carbon_number]]))[0]
     
     return predicted_bp
 
